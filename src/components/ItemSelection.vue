@@ -37,7 +37,7 @@
 
 <script>
 export default {
-  name: "itemSelection",
+  name: "ItemSelection",
   props: {
     section: {
       type: String,
@@ -45,6 +45,11 @@ export default {
       default: "",
     },
     type: {
+      type: String,
+      required: true,
+      default: "",
+    },
+    selected: {
       type: String,
       required: true,
       default: "",
@@ -57,14 +62,8 @@ export default {
   emits: {
     selectItem: null,
   },
-  data() {
-    return {
-      selected: null,
-    };
-  },
   methods: {
     selectItem(id) {
-      this.selected = id;
       this.$emit("selectItem", { type: this.type, id: id });
     },
   },
