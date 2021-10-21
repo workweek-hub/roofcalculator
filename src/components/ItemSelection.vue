@@ -30,7 +30,7 @@
         width="90"
         class="rounded-md m-2 mr-4 border border-gray-100"
       />
-      <span class="self-center text-sm">{{ item.ruTitle }}</span>
+      <span class="self-center text-sm pr-3">{{ item.ruTitle }}</span>
     </div>
   </div>
 </template>
