@@ -29,6 +29,7 @@
           border border-gray-200
           rounded-r-lg
           flex
+          hover:shadow-lg
         "
       >
         <div class="hidden xl:block">

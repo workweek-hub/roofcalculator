@@ -128,7 +128,7 @@
 export default {
   name: "ParameterInput",
   props: {
-    roof: {
+    roofs: {
       type: Array,
       required: true,
     },
@@ -163,7 +163,7 @@ export default {
       return require(`../assets/images/${this.selectedRoof}.jpg`);
     },
     proportions() {
-      return this.roof.find((item) => item.id === this.selectedRoof)
+      return this.roofs.find((item) => item.id === this.selectedRoof)
         .proportions;
     },
     steelThickness() {
