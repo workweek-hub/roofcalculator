@@ -143,6 +143,375 @@ export default {
         this.roofs[
           this.roofs.findIndex((item) => item.id === this.selectedRoof)
         ];
+      switch (this.selectedRoof) {
+        case "singleSlope":
+          this.calculateSingleSlope(roof);
+          break;
+        case "gable":
+          this.calculateGable(roof);
+          break;
+        case "valm":
+          this.calculateValm(roof);
+          break;
+        case "hipRoof":
+          this.calculateHipRoof(roof);
+          break;
+        case "attic":
+          this.calculateAttic(roof);
+          break;
+      }
+    },
+    calculateAttic(roof) {
+      let side1Width;
+      let side14Length;
+      let side23Length;
+
+      for (let prop of roof.proportions) {
+        if (!prop.value) {
+          this.errors = "Не указаны все стороны кровли";
+        } else {
+          if (prop.id === "side1Width") {
+            side1Width = prop.value;
+          }
+          if (prop.id === "side14Length") {
+            side14Length = prop.value;
+          }
+          if (prop.id === "side23Length") {
+            side23Length = prop.value;
+          }
+        }
+      }
+      if (side1Width && side14Length && side23Length) {
+        const currentWorkingWidth = this.workingWidth.find(
+          (item) => item.version === this.selectedBoard
+        );
+        const meterCost = this.selectedParam.price[this.selectedThickness];
+        const numberOfSheets =
+          Math.ceil(Number(side1Width) / Number(currentWorkingWidth.value)) * 2;
+        const runningMeters1 = numberOfSheets * (Number(side14Length) + 0.15);
+        const runningMeters2 = numberOfSheets * (Number(side23Length) + 0.15);
+        this.result = {
+          roofArea:
+            Number(side1Width) *
+            (Number(side14Length) + Number(side23Length)) *
+            2,
+          numberOfSheets: numberOfSheets * 2,
+          meterCost: meterCost,
+          totalPrice: (runningMeters1 + runningMeters2) * meterCost,
+          workingArea:
+            (runningMeters1 + runningMeters2) *
+            Number(currentWorkingWidth.value),
+          metalArea:
+            (runningMeters1 + runningMeters2) * currentWorkingWidth.totalValue,
+          ral: this.selectedParam.ral,
+          selectedBoard: this.selectedBoard,
+          thickness: this.selectedThickness,
+          positions: [
+            {
+              numberOfSheets: numberOfSheets,
+              leafLength: Number(side14Length) + 0.15,
+              metalArea: runningMeters1 * currentWorkingWidth.totalValue,
+              totalPrice: runningMeters1 * meterCost,
+            },
+            {
+              numberOfSheets: numberOfSheets,
+              leafLength: Number(side23Length) + 0.15,
+              metalArea: runningMeters2 * currentWorkingWidth.totalValue,
+              totalPrice: runningMeters2 * meterCost,
+            },
+          ],
+        };
+      }
+    },
+    calculateHipRoof(roof) {
+      let side1Width;
+      let side2Width;
+      let side1Length;
+      let side2Length;
+      for (let prop of roof.proportions) {
+        if (!prop.value) {
+          this.errors = "Не указаны все стороны кровли";
+        } else {
+          if (prop.id === "side1Width") {
+            side1Width = prop.value;
+          }
+          if (prop.id === "side2Width") {
+            side2Width = prop.value;
+          }
+          if (prop.id === "side1Length") {
+            side1Length = prop.value;
+          }
+          if (prop.id === "side2Length") {
+            side2Length = prop.value;
+          }
+        }
+      }
+      if (side1Width && side1Width && side1Length && side2Length) {
+        const currentWorkingWidth = this.workingWidth.find(
+          (item) => item.version === this.selectedBoard
+        );
+        const meterCost = this.selectedParam.price[this.selectedThickness];
+        const triangle1Width = Number(side1Width) / 3;
+        const triangle2Width = triangle1Width * 2;
+        const triangle3Width = Number(side2Width) / 3;
+        const triangle4Width = triangle3Width * 2;
+        const numberOfSheetsTriangle1 =
+          Math.ceil(
+            Number(triangle1Width) / Number(currentWorkingWidth.value)
+          ) * 2;
+        const numberOfSheetsTriangle2 =
+          Math.ceil(
+            Number(triangle2Width) / Number(currentWorkingWidth.value)
+          ) * 2;
+        const numberOfSheetsTriangle3 =
+          Math.ceil(
+            Number(triangle3Width) / Number(currentWorkingWidth.value)
+          ) * 2;
+        const numberOfSheetsTriangle4 =
+          Math.ceil(
+            Number(triangle4Width) / Number(currentWorkingWidth.value)
+          ) * 2;
+        const runningMetersTriangle1 =
+          numberOfSheetsTriangle1 * (Number(side1Length) / 2 + 0.15);
+        const runningMetersTriangle2 =
+          numberOfSheetsTriangle2 * (Number(side1Length) + 0.15);
+        const runningMetersTriangle3 =
+          numberOfSheetsTriangle3 * (Number(side2Length) / 2 + 0.15);
+        const runningMetersTriangle4 =
+          numberOfSheetsTriangle4 * (Number(side2Length) + 0.15);
+        const totalMetersTriangle4 =
+          runningMetersTriangle1 +
+          runningMetersTriangle2 +
+          runningMetersTriangle3 +
+          runningMetersTriangle4;
+        this.result = {
+          roofArea:
+            (Number(side1Width) * Number(side1Length) +
+              Number(side2Width) * Number(side2Length)) *
+            2,
+          numberOfSheets:
+            numberOfSheetsTriangle1 +
+            numberOfSheetsTriangle2 +
+            numberOfSheetsTriangle3 +
+            numberOfSheetsTriangle4,
+          meterCost: meterCost,
+          totalPrice: totalMetersTriangle4 * meterCost,
+          workingArea: totalMetersTriangle4 * Number(currentWorkingWidth.value),
+          metalArea: totalMetersTriangle4 * currentWorkingWidth.totalValue,
+          ral: this.selectedParam.ral,
+          selectedBoard: this.selectedBoard,
+          thickness: this.selectedThickness,
+          positions: [
+            {
+              numberOfSheets: numberOfSheetsTriangle1,
+              leafLength: Number(side1Length) / 2 + 0.15,
+              metalArea:
+                runningMetersTriangle1 * currentWorkingWidth.totalValue,
+              totalPrice: runningMetersTriangle1 * meterCost,
+            },
+            {
+              numberOfSheets: numberOfSheetsTriangle2,
+              leafLength: Number(side1Length) + 0.15,
+              metalArea:
+                runningMetersTriangle2 * currentWorkingWidth.totalValue,
+              totalPrice: runningMetersTriangle2 * meterCost,
+            },
+            {
+              numberOfSheets: numberOfSheetsTriangle3,
+              leafLength: Number(side2Length) / 2 + 0.15,
+              metalArea:
+                runningMetersTriangle3 * currentWorkingWidth.totalValue,
+              totalPrice: runningMetersTriangle3 * meterCost,
+            },
+            {
+              numberOfSheets: numberOfSheetsTriangle4,
+              leafLength: Number(side2Length) + 0.15,
+              metalArea:
+                runningMetersTriangle4 * currentWorkingWidth.totalValue,
+              totalPrice: runningMetersTriangle4 * meterCost,
+            },
+          ],
+        };
+      }
+    },
+    calculateValm(roof) {
+      let side1Width;
+      let side2Width;
+      let colicWidth;
+      let side1Length;
+      let side2Length;
+
+      for (let prop of roof.proportions) {
+        if (!prop.value) {
+          this.errors = "Не указаны все стороны кровли";
+        } else {
+          if (prop.id === "side1Width") {
+            side1Width = prop.value;
+          }
+          if (prop.id === "side2Width") {
+            side2Width = prop.value;
+          }
+          if (prop.id === "colicWidth") {
+            colicWidth = prop.value;
+          }
+          if (prop.id === "side1Length") {
+            side1Length = prop.value;
+          }
+          if (prop.id === "side2Length") {
+            side2Length = prop.value;
+          }
+        }
+      }
+      if (
+        side1Width &&
+        side2Width &&
+        colicWidth &&
+        side1Length &&
+        side2Length
+      ) {
+        const currentWorkingWidth = this.workingWidth.find(
+          (item) => item.version === this.selectedBoard
+        );
+        const meterCost = this.selectedParam.price[this.selectedThickness];
+        const triangle1Width = (Number(side1Width) - Number(colicWidth)) / 2;
+        const rectangleWidth = triangle1Width + Number(colicWidth);
+        const triangle2Width = side2Width / 2;
+        const roofArea =
+          (Number(colicWidth) * Number(side1Length) +
+            Number(side1Length) * triangle1Width +
+            Number(side2Width) * Number(side2Length)) *
+          2;
+        const numberOfSheetsRectangle =
+          Math.ceil(
+            Number(rectangleWidth) / Number(currentWorkingWidth.value)
+          ) * 2;
+        const numberOfSheetsTriangle1 =
+          Math.ceil(
+            Number(triangle1Width) / Number(currentWorkingWidth.value)
+          ) * 2;
+        const numberOfSheetsTriangle2 =
+          Math.ceil(
+            Number(triangle2Width) / Number(currentWorkingWidth.value)
+          ) * 2;
+        const runningMetersRectangle =
+          numberOfSheetsRectangle * (Number(side1Length) + 0.15);
+        const runningMetersTriangle1 =
+          numberOfSheetsTriangle1 * (Number(side1Length) / 2 + 0.15);
+        const runningMetersTriangle2 =
+          numberOfSheetsTriangle2 * (Number(side2Length) + 0.15);
+        const runningMetersTriangle3 =
+          numberOfSheetsTriangle2 * (Number(side2Length) / 2 + 0.15);
+        const totalRunningMeters =
+          runningMetersRectangle +
+          runningMetersTriangle1 +
+          runningMetersTriangle2 +
+          runningMetersTriangle3;
+        this.result = {
+          roofArea: roofArea,
+          numberOfSheets:
+            numberOfSheetsRectangle +
+            numberOfSheetsTriangle1 +
+            numberOfSheetsTriangle2,
+          meterCost: meterCost,
+          totalPrice: totalRunningMeters * meterCost,
+          workingArea: totalRunningMeters * Number(currentWorkingWidth.value),
+          metalArea: totalRunningMeters * currentWorkingWidth.totalValue,
+          ral: this.selectedParam.ral,
+          selectedBoard: this.selectedBoard,
+          thickness: this.selectedThickness,
+          positions: [
+            {
+              numberOfSheets: numberOfSheetsRectangle,
+              leafLength: Number(side1Length) + 0.15,
+              metalArea:
+                runningMetersRectangle * currentWorkingWidth.totalValue,
+              totalPrice: runningMetersRectangle * meterCost,
+            },
+            {
+              numberOfSheets: numberOfSheetsTriangle1,
+              leafLength: Number(side1Length) / 2 + 0.15,
+              metalArea:
+                runningMetersTriangle1 * currentWorkingWidth.totalValue,
+              totalPrice: runningMetersTriangle1 * meterCost,
+            },
+            {
+              numberOfSheets: numberOfSheetsTriangle2,
+              leafLength: Number(side1Length) + 0.15,
+              metalArea:
+                runningMetersTriangle2 * currentWorkingWidth.totalValue,
+              totalPrice: runningMetersTriangle2 * meterCost,
+            },
+            {
+              numberOfSheets: numberOfSheetsTriangle2,
+              leafLength: Number(side1Length) / 2 + 0.15,
+              metalArea:
+                runningMetersTriangle3 * currentWorkingWidth.totalValue,
+              totalPrice: runningMetersTriangle3 * meterCost,
+            },
+          ],
+        };
+      }
+    },
+    calculateGable(roof) {
+      let roofWidth;
+      let side1Length;
+      let side2Length;
+      for (let prop of roof.proportions) {
+        if (!prop.value) {
+          this.errors = "Не указаны все стороны кровли";
+        } else {
+          if (prop.id === "roofWidth") {
+            roofWidth = prop.value;
+          }
+          if (prop.id === "side1Length") {
+            side1Length = prop.value;
+          }
+          if (prop.id === "side2Length") {
+            side2Length = prop.value;
+          }
+        }
+      }
+      if (roofWidth && side1Length && side2Length) {
+        const currentWorkingWidth = this.workingWidth.find(
+          (item) => item.version === this.selectedBoard
+        );
+        const meterCost = this.selectedParam.price[this.selectedThickness];
+        const numberOfSheets =
+          Math.ceil(Number(roofWidth) / Number(currentWorkingWidth.value)) * 2;
+        const runningMeters1 = numberOfSheets * (Number(side1Length) + 0.15);
+        const runningMeters2 = numberOfSheets * (Number(side2Length) + 0.15);
+        this.result = {
+          roofArea:
+            Number(roofWidth) * (Number(side1Length) + Number(side2Length)),
+          numberOfSheets: numberOfSheets,
+          meterCost: meterCost,
+          totalPrice: (runningMeters1 + runningMeters2) * meterCost,
+          workingArea:
+            (runningMeters1 + runningMeters2) *
+            Number(currentWorkingWidth.value),
+          metalArea:
+            (runningMeters1 + runningMeters2) * currentWorkingWidth.totalValue,
+          ral: this.selectedParam.ral,
+          selectedBoard: this.selectedBoard,
+          thickness: this.selectedThickness,
+          positions: [
+            {
+              numberOfSheets: numberOfSheets / 2,
+              leafLength: Number(side1Length) + 0.15,
+              metalArea: runningMeters1 * currentWorkingWidth.totalValue,
+              totalPrice: runningMeters1 * meterCost,
+            },
+            {
+              numberOfSheets: numberOfSheets / 2,
+              leafLength: Number(side2Length) + 0.15,
+              metalArea: runningMeters2 * currentWorkingWidth.totalValue,
+              totalPrice: runningMeters2 * meterCost,
+            },
+          ],
+        };
+      }
+    },
+    calculateSingleSlope(roof) {
       let roofWidth;
       let roofHeight;
       for (let prop of roof.proportions) {
@@ -158,31 +527,34 @@ export default {
         }
       }
       if (roofWidth && roofHeight) {
-        switch (this.selectedRoof) {
-          case "singleSlope": {
-            const currentWorkingWidth = this.workingWidth.find(
-              (item) => item.version === this.selectedBoard
-            );
-            const meterCost = this.selectedParam.price[this.selectedThickness];
-            const numberOfSheets = Math.ceil(
-              Number(roofWidth) / Number(currentWorkingWidth.value)
-            );
-            const runningMeters = numberOfSheets * (Number(roofHeight) + 0.3);
-            this.result = {
-              roofArea: Number(roofWidth) * Number(roofHeight),
+        const currentWorkingWidth = this.workingWidth.find(
+          (item) => item.version === this.selectedBoard
+        );
+        const meterCost = this.selectedParam.price[this.selectedThickness];
+        const numberOfSheets = Math.ceil(
+          Number(roofWidth) / Number(currentWorkingWidth.value)
+        );
+        const runningMeters = numberOfSheets * (Number(roofHeight) + 0.3);
+        this.result = {
+          roofArea: Number(roofWidth) * Number(roofHeight),
+          numberOfSheets: numberOfSheets,
+          meterCost: meterCost,
+          totalPrice: runningMeters * meterCost,
+          workingArea: runningMeters * Number(currentWorkingWidth.value),
+          metalArea: runningMeters * currentWorkingWidth.totalValue,
+          ral: this.selectedParam.ral,
+          selectedBoard: this.selectedBoard,
+          thickness: this.selectedThickness,
+          leafLength: Number(roofHeight) + 0.3,
+          positions: [
+            {
               numberOfSheets: numberOfSheets,
-              meterCost: meterCost,
-              totalPrice: runningMeters * meterCost,
-              workingArea: runningMeters * Number(currentWorkingWidth.value),
-              metalArea: runningMeters * currentWorkingWidth.totalValue,
-              ral: this.selectedParam.ral,
-              selectedBoard: this.selectedBoard,
-              thickness: this.selectedThickness,
               leafLength: Number(roofHeight) + 0.3,
-            };
-            break;
-          }
-        }
+              metalArea: runningMeters * currentWorkingWidth.totalValue,
+              totalPrice: runningMeters * meterCost,
+            },
+          ],
+        };
       }
     },
   },

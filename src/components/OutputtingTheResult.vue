@@ -58,34 +58,30 @@
               {{ result.meterCost.toFixed(2) }} руб / п.м.
             </span>
           </div>
-          <div class="mt-4 sm:mt-8 block sm:flex">
-            <span
-              class="
-                block
-                text-xs text-gray-400
-                w-full
-                self-center
-                pr-5
-                mb-4
-                sm:mb-0
-              "
+          <div>
+            <div
+              class="mt-4 sm:mt-8 block sm:flex"
+              v-for="(order, ind) of result.positions"
+              :key="`ord-${ind}`"
             >
-              {{ orderDescription }}
-            </span>
-            <span class="font-bold mr-2 inline sm:hidden text-sm">
-              Сумма:
-            </span>
-            <span
-              class="
-                whitespace-nowrap
-                font-bold
-                self-center
-                text-sm
-                sm:text-base
-              "
-            >
-              {{ result.totalPrice.toFixed(2) }} руб
-            </span>
+              <span class="block text-xs text-gray-400 w-full self-center pr-5">
+                {{ orderDescription(order) }}
+              </span>
+              <span class="font-bold mr-2 inline sm:hidden text-sm">
+                Сумма:
+              </span>
+              <span
+                class="
+                  whitespace-nowrap
+                  font-bold
+                  self-center
+                  text-sm
+                  sm:text-base
+                "
+              >
+                {{ order.totalPrice.toFixed(2) }} руб
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -164,14 +160,12 @@ export default {
         this.result.ral ? "RAL" + this.result.ral : this.result.ral
       } / Толщина: ${this.result.thickness.toFixed(2)} мм`;
     },
-    orderDescription() {
-      return `Количество листов: ${this.result.numberOfSheets} шт.
-      Длина листа: ${this.result.leafLength.toFixed(2)} м.
-      Площадь: ${this.result.metalArea.toFixed(2)} м2`;
-    },
     finalCalculation() {
       return [
-        { title: "Площадь кровли:", value: `${this.result.roofArea} м2` },
+        {
+          title: "Площадь кровли:",
+          value: `${this.result.roofArea.toFixed(2)} м2`,
+        },
         {
           title: "Площадь листов полная:",
           value: `${this.result.metalArea.toFixed(2)} м2`,
@@ -182,6 +176,13 @@ export default {
         },
         { title: "Листы:", value: `${this.result.numberOfSheets} ед` },
       ];
+    },
+  },
+  methods: {
+    orderDescription(order) {
+      return `Количество листов: ${order.numberOfSheets} шт.
+      Длина листа: ${order.leafLength.toFixed(2)} м.
+      Площадь: ${order.metalArea.toFixed(2)} м2`;
     },
   },
 };
