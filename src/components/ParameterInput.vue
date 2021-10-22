@@ -108,15 +108,15 @@
           "
         >
           <div
-            v-for="param of materialParameters"
-            :key="param.ral"
+            v-for="item of matProperties.colors"
+            :key="item.ral"
             class="w-full rounded-sm border border-white cursor-pointer"
-            :class="{ 'border-gray-300': selectedParam.ral === param.ral }"
-            @click="selectColor(param)"
+            :class="{ 'border-gray-300': selectedParam.ral === item.ral }"
+            @click="selectColor(item)"
           >
             <div
               class="w-8 sm:w-12 h-10 sm:h-14 m-1 rounded-sm"
-              :style="{ backgroundColor: param.color }"
+              :style="{ backgroundColor: item.color }"
             ></div>
           </div>
         </div>
@@ -138,8 +138,8 @@ export default {
       required: true,
       default: "",
     },
-    materialParameters: {
-      type: Array,
+    matProperties: {
+      type: Object,
       required: true,
     },
     selectedParam: {
@@ -155,7 +155,7 @@ export default {
     },
   },
   emits: {
-    selectParam: null,
+    selectColor: null,
     selectThickness: null,
     selectSide: null,
   },
@@ -172,8 +172,8 @@ export default {
     },
   },
   methods: {
-    selectColor(param) {
-      this.$emit("selectParam", param);
+    selectColor(color) {
+      this.$emit("selectColor", color);
     },
     selectThickness(value) {
       this.$emit("selectThickness", value);

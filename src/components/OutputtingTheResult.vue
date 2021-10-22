@@ -150,7 +150,7 @@ export default {
   computed: {
     resultTitle() {
       return `Профнастил ${this.result.selectedBoard} ${
-        this.result.ral
+        this.result.ral !== "оцинковка"
           ? "RAL " + this.result.ral + " полимерное покрытие"
           : "оцинкованное покрытие"
       }`;

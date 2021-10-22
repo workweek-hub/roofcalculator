@@ -21,9 +21,9 @@
       :roofs="roofs"
       :selectedRoof="selectedRoof"
       :selectedThickness="selectedThickness"
-      :materialParameters="materialParameters"
+      :matProperties="matProperties"
       :paintedSide="paintedSide"
-      @select-param="selectParam"
+      @select-color="selectColor"
       :selectedParam="selectedParam"
       @select-thickness="selectThickness"
       @select-side="setSide"
@@ -53,6 +53,7 @@
 <script>
 import defaultRoofs from "./configs/roofs";
 import materialProperties from "./configs/corrugatedBoard";
+import defaultPrice from "./configs/price";
 import ItemSelection from "@/components/ItemSelection";
 import ParameterInput from "@/components/ParameterInput";
 import OutputtingTheResult from "@/components/OutputtingTheResult";
@@ -68,11 +69,10 @@ export default {
       roofs: [],
       selectedRoof: "singleSlope",
       corrugatedBoard: [
-        { id: "C20", ruTitle: "Профнастил С20", param: "c20_21" },
-        { id: "C21", ruTitle: "Профнастил С21", param: "c20_21" },
-        { id: "HC35", ruTitle: "Профнастил HC35", param: "hc35_75" },
-        { id: "H75", ruTitle: "Профнастил H75", param: "hc35_75" },
-        { id: "HC44", ruTitle: "Профнастил HC44", param: "hc44" },
+        { id: "C20", ruTitle: "Профнастил С20" },
+        { id: "HC44", ruTitle: "Профнастил HC44" },
+        { id: "H75", ruTitle: "Профнастил H75" },
+        { id: "H114", ruTitle: "Профнастил H114" },
       ],
       selectedBoard: "C20",
       matProperties: {},
@@ -83,37 +83,33 @@ export default {
       errors: "",
       workingWidth: [
         { version: "C20", value: 1.1, totalValue: 1.15 },
-        { version: "C21", value: 1, totalValue: 1.051 },
-        { version: "HC35", value: 1, totalValue: 1.06 },
+        { version: "HC44", value: 1, totalValue: 1.25 },
         { version: "H75", value: 0.75, totalValue: 0.8 },
-        { version: "HC44", value: 1, totalValue: 1.047 },
+        { version: "H114", value: 0.807, totalValue: 0.75 },
       ],
+      price: {},
     };
   },
   created: function () {
     this.roofs = defaultRoofs.base;
+    this.price = defaultPrice.base;
     this.matProperties = materialProperties.base;
-    this.updateInitialData();
-  },
-  computed: {
-    materialParameters() {
-      let param = this.corrugatedBoard.find(
-        (board) => board.id === this.selectedBoard
-      ).param;
-      return this.matProperties[param];
-    },
+    this.updateInitialData("polymer");
   },
   methods: {
-    updateInitialData() {
-      let param = this.corrugatedBoard.find(
-        (board) => board.id === this.selectedBoard
-      ).param;
-      this.selectedParam = this.matProperties[param][0];
+    updateInitialData(param) {
+      this.selectedParam = {
+        ral: this.matProperties.colors[0].ral,
+        color: this.matProperties.colors[0].color,
+        steelThickness:
+          this.matProperties.steelThickness[this.selectedBoard][param],
+      };
       this.updateInitialThickness();
       this.setStartPaintedSide();
     },
     updateInitialThickness() {
-      this.selectedThickness = this.selectedParam.steelThickness[0];
+      this.selectedThickness =
+        this.matProperties.steelThickness[this.selectedBoard].polymer[0];
     },
     setStartPaintedSide(value = "top") {
       this.paintedSide = value;
@@ -126,8 +122,24 @@ export default {
       }
       this.result = null;
     },
-    selectParam(param) {
-      this.selectedParam = param;
+    selectColor(item) {
+      if (this.selectedParam.ral !== "оцинковка" && item.ral === "оцинковка") {
+        const zincArr =
+          this.matProperties.steelThickness[this.selectedBoard].zinc;
+        this.selectedParam.steelThickness = zincArr;
+        this.selectedThickness = zincArr[0];
+      }
+      if (this.selectedParam.ral === "оцинковка" && item.ral !== "оцинковка") {
+        const polyArr =
+          this.matProperties.steelThickness[this.selectedBoard].polymer;
+        this.selectedParam.steelThickness = polyArr;
+        this.selectedThickness = polyArr[0];
+      }
+      this.selectedParam = {
+        ...this.selectedParam,
+        ral: item.ral,
+        color: item.color,
+      };
       this.result = null;
     },
     selectThickness(value) {
@@ -143,25 +155,31 @@ export default {
         this.roofs[
           this.roofs.findIndex((item) => item.id === this.selectedRoof)
         ];
+      let price;
+      if (this.selectedParam.ral === "оцинковка") {
+        price = this.price.zinc[this.selectedBoard][this.selectedThickness];
+      } else {
+        price = this.price.polymer[this.selectedBoard][this.selectedThickness];
+      }
       switch (this.selectedRoof) {
         case "singleSlope":
-          this.calculateSingleSlope(roof);
+          this.calculateSingleSlope(roof, price);
           break;
         case "gable":
-          this.calculateGable(roof);
+          this.calculateGable(roof, price);
           break;
         case "valm":
-          this.calculateValm(roof);
+          this.calculateValm(roof, price);
           break;
         case "hipRoof":
-          this.calculateHipRoof(roof);
+          this.calculateHipRoof(roof, price);
           break;
         case "attic":
-          this.calculateAttic(roof);
+          this.calculateAttic(roof, price);
           break;
       }
     },
-    calculateAttic(roof) {
+    calculateAttic(roof, price) {
       let side1Width;
       let side14Length;
       let side23Length;
@@ -185,7 +203,6 @@ export default {
         const currentWorkingWidth = this.workingWidth.find(
           (item) => item.version === this.selectedBoard
         );
-        const meterCost = this.selectedParam.price[this.selectedThickness];
         const numberOfSheets =
           Math.ceil(Number(side1Width) / Number(currentWorkingWidth.value)) * 2;
         const runningMeters1 = numberOfSheets * (Number(side14Length) + 0.15);
@@ -196,8 +213,8 @@ export default {
             (Number(side14Length) + Number(side23Length)) *
             2,
           numberOfSheets: numberOfSheets * 2,
-          meterCost: meterCost,
-          totalPrice: (runningMeters1 + runningMeters2) * meterCost,
+          meterCost: price,
+          totalPrice: (runningMeters1 + runningMeters2) * price,
           workingArea:
             (runningMeters1 + runningMeters2) *
             Number(currentWorkingWidth.value),
@@ -211,19 +228,19 @@ export default {
               numberOfSheets: numberOfSheets,
               leafLength: Number(side14Length) + 0.15,
               metalArea: runningMeters1 * currentWorkingWidth.totalValue,
-              totalPrice: runningMeters1 * meterCost,
+              totalPrice: runningMeters1 * price,
             },
             {
               numberOfSheets: numberOfSheets,
               leafLength: Number(side23Length) + 0.15,
               metalArea: runningMeters2 * currentWorkingWidth.totalValue,
-              totalPrice: runningMeters2 * meterCost,
+              totalPrice: runningMeters2 * price,
             },
           ],
         };
       }
     },
-    calculateHipRoof(roof) {
+    calculateHipRoof(roof, price) {
       let side1Width;
       let side2Width;
       let side1Length;
@@ -250,7 +267,6 @@ export default {
         const currentWorkingWidth = this.workingWidth.find(
           (item) => item.version === this.selectedBoard
         );
-        const meterCost = this.selectedParam.price[this.selectedThickness];
         const triangle1Width = Number(side1Width) / 3;
         const triangle2Width = triangle1Width * 2;
         const triangle3Width = Number(side2Width) / 3;
@@ -294,8 +310,8 @@ export default {
             numberOfSheetsTriangle2 +
             numberOfSheetsTriangle3 +
             numberOfSheetsTriangle4,
-          meterCost: meterCost,
-          totalPrice: totalMetersTriangle4 * meterCost,
+          meterCost: price,
+          totalPrice: totalMetersTriangle4 * price,
           workingArea: totalMetersTriangle4 * Number(currentWorkingWidth.value),
           metalArea: totalMetersTriangle4 * currentWorkingWidth.totalValue,
           ral: this.selectedParam.ral,
@@ -307,34 +323,34 @@ export default {
               leafLength: Number(side1Length) / 2 + 0.15,
               metalArea:
                 runningMetersTriangle1 * currentWorkingWidth.totalValue,
-              totalPrice: runningMetersTriangle1 * meterCost,
+              totalPrice: runningMetersTriangle1 * price,
             },
             {
               numberOfSheets: numberOfSheetsTriangle2,
               leafLength: Number(side1Length) + 0.15,
               metalArea:
                 runningMetersTriangle2 * currentWorkingWidth.totalValue,
-              totalPrice: runningMetersTriangle2 * meterCost,
+              totalPrice: runningMetersTriangle2 * price,
             },
             {
               numberOfSheets: numberOfSheetsTriangle3,
               leafLength: Number(side2Length) / 2 + 0.15,
               metalArea:
                 runningMetersTriangle3 * currentWorkingWidth.totalValue,
-              totalPrice: runningMetersTriangle3 * meterCost,
+              totalPrice: runningMetersTriangle3 * price,
             },
             {
               numberOfSheets: numberOfSheetsTriangle4,
               leafLength: Number(side2Length) + 0.15,
               metalArea:
                 runningMetersTriangle4 * currentWorkingWidth.totalValue,
-              totalPrice: runningMetersTriangle4 * meterCost,
+              totalPrice: runningMetersTriangle4 * price,
             },
           ],
         };
       }
     },
-    calculateValm(roof) {
+    calculateValm(roof, price) {
       let side1Width;
       let side2Width;
       let colicWidth;
@@ -367,12 +383,12 @@ export default {
         side2Width &&
         colicWidth &&
         side1Length &&
-        side2Length
+        side2Length &&
+        Number(side1Width) > Number(colicWidth)
       ) {
         const currentWorkingWidth = this.workingWidth.find(
           (item) => item.version === this.selectedBoard
         );
-        const meterCost = this.selectedParam.price[this.selectedThickness];
         const triangle1Width = (Number(side1Width) - Number(colicWidth)) / 2;
         const rectangleWidth = triangle1Width + Number(colicWidth);
         const triangle2Width = side2Width / 2;
@@ -412,8 +428,8 @@ export default {
             numberOfSheetsRectangle +
             numberOfSheetsTriangle1 +
             numberOfSheetsTriangle2,
-          meterCost: meterCost,
-          totalPrice: totalRunningMeters * meterCost,
+          meterCost: price,
+          totalPrice: totalRunningMeters * price,
           workingArea: totalRunningMeters * Number(currentWorkingWidth.value),
           metalArea: totalRunningMeters * currentWorkingWidth.totalValue,
           ral: this.selectedParam.ral,
@@ -425,34 +441,34 @@ export default {
               leafLength: Number(side1Length) + 0.15,
               metalArea:
                 runningMetersRectangle * currentWorkingWidth.totalValue,
-              totalPrice: runningMetersRectangle * meterCost,
+              totalPrice: runningMetersRectangle * price,
             },
             {
               numberOfSheets: numberOfSheetsTriangle1,
               leafLength: Number(side1Length) / 2 + 0.15,
               metalArea:
                 runningMetersTriangle1 * currentWorkingWidth.totalValue,
-              totalPrice: runningMetersTriangle1 * meterCost,
+              totalPrice: runningMetersTriangle1 * price,
             },
             {
               numberOfSheets: numberOfSheetsTriangle2,
               leafLength: Number(side1Length) + 0.15,
               metalArea:
                 runningMetersTriangle2 * currentWorkingWidth.totalValue,
-              totalPrice: runningMetersTriangle2 * meterCost,
+              totalPrice: runningMetersTriangle2 * price,
             },
             {
               numberOfSheets: numberOfSheetsTriangle2,
               leafLength: Number(side1Length) / 2 + 0.15,
               metalArea:
                 runningMetersTriangle3 * currentWorkingWidth.totalValue,
-              totalPrice: runningMetersTriangle3 * meterCost,
+              totalPrice: runningMetersTriangle3 * price,
             },
           ],
         };
       }
     },
-    calculateGable(roof) {
+    calculateGable(roof, price) {
       let roofWidth;
       let side1Length;
       let side2Length;
@@ -475,7 +491,6 @@ export default {
         const currentWorkingWidth = this.workingWidth.find(
           (item) => item.version === this.selectedBoard
         );
-        const meterCost = this.selectedParam.price[this.selectedThickness];
         const numberOfSheets =
           Math.ceil(Number(roofWidth) / Number(currentWorkingWidth.value)) * 2;
         const runningMeters1 = numberOfSheets * (Number(side1Length) + 0.15);
@@ -484,8 +499,8 @@ export default {
           roofArea:
             Number(roofWidth) * (Number(side1Length) + Number(side2Length)),
           numberOfSheets: numberOfSheets,
-          meterCost: meterCost,
-          totalPrice: (runningMeters1 + runningMeters2) * meterCost,
+          meterCost: price,
+          totalPrice: (runningMeters1 + runningMeters2) * price,
           workingArea:
             (runningMeters1 + runningMeters2) *
             Number(currentWorkingWidth.value),
@@ -499,19 +514,19 @@ export default {
               numberOfSheets: numberOfSheets / 2,
               leafLength: Number(side1Length) + 0.15,
               metalArea: runningMeters1 * currentWorkingWidth.totalValue,
-              totalPrice: runningMeters1 * meterCost,
+              totalPrice: runningMeters1 * price,
             },
             {
               numberOfSheets: numberOfSheets / 2,
               leafLength: Number(side2Length) + 0.15,
               metalArea: runningMeters2 * currentWorkingWidth.totalValue,
-              totalPrice: runningMeters2 * meterCost,
+              totalPrice: runningMeters2 * price,
             },
           ],
         };
       }
     },
-    calculateSingleSlope(roof) {
+    calculateSingleSlope(roof, price) {
       let roofWidth;
       let roofHeight;
       for (let prop of roof.proportions) {
@@ -530,7 +545,6 @@ export default {
         const currentWorkingWidth = this.workingWidth.find(
           (item) => item.version === this.selectedBoard
         );
-        const meterCost = this.selectedParam.price[this.selectedThickness];
         const numberOfSheets = Math.ceil(
           Number(roofWidth) / Number(currentWorkingWidth.value)
         );
@@ -538,8 +552,8 @@ export default {
         this.result = {
           roofArea: Number(roofWidth) * Number(roofHeight),
           numberOfSheets: numberOfSheets,
-          meterCost: meterCost,
-          totalPrice: runningMeters * meterCost,
+          meterCost: price,
+          totalPrice: runningMeters * price,
           workingArea: runningMeters * Number(currentWorkingWidth.value),
           metalArea: runningMeters * currentWorkingWidth.totalValue,
           ral: this.selectedParam.ral,
@@ -551,7 +565,7 @@ export default {
               numberOfSheets: numberOfSheets,
               leafLength: Number(roofHeight) + 0.3,
               metalArea: runningMeters * currentWorkingWidth.totalValue,
-              totalPrice: runningMeters * meterCost,
+              totalPrice: runningMeters * price,
             },
           ],
         };
@@ -559,12 +573,15 @@ export default {
     },
   },
   watch: {
+    selectedRoof() {
+      this.updateInitialData("polymer");
+      this.result = null;
+    },
     selectedBoard() {
-      this.updateInitialData();
+      this.updateInitialData("polymer");
       this.result = null;
     },
     selectedParam() {
-      this.updateInitialThickness();
       this.selectedParam.ral === "оцинковка"
         ? this.setStartPaintedSide(null)
         : this.setStartPaintedSide();
